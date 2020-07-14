@@ -42,6 +42,9 @@ namespace Project.Api.Services
         Task<bool> RemoveProject(MongoProject project);
 
         Task<bool> RemoveDeveloperFromProject(string projectId, string developerId);
+        Task<bool> RemoveToDOFromProject(string projectId, string todoId);
+        Task<bool> RemoveInProgressFromProject(string projectId, string inprogressId);
+        Task<bool> RemoveDoneFromProject(string projectId, string doneId);
 
 
     }

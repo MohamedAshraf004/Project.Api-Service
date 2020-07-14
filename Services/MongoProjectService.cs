@@ -14,7 +14,7 @@ using Project.Api.Domain.MongoDomains;
 
 namespace Project.Api.Services
 {
-    public class MongoProjectService: IMongoProjectService
+    public class MongoProjectService : IMongoProjectService
     {
 
 
@@ -36,25 +36,25 @@ namespace Project.Api.Services
         }
         public async Task<MongoProject> GetProjectById(string id)
         {
-           var result= await _Projects.FindAsync(project => project.Id == id);
+            var result = await _Projects.FindAsync(project => project.Id == id);
             var getProject = await result.SingleOrDefaultAsync();
             return getProject;
         }
-        public async Task<MongoDeveloper> GetDeveloperById(string developerId,string projectId)
+        public async Task<MongoDeveloper> GetDeveloperById(string developerId, string projectId)
         {
             var result = await _Projects.FindAsync(proj => proj.Id == projectId);
             var project = await result.SingleOrDefaultAsync();
             var developer = project.Developer.SingleOrDefault(d => d.Id == developerId);
             return developer;
-            
+
         }
 
 
 
         public async Task<IEnumerable<MongoProject>> GetProjectByName(string name)
         {
-           var result= await _Projects.FindAsync(project => project.ProjectName.Contains(name));
-            var getProjects =  result.ToEnumerable();
+            var result = await _Projects.FindAsync(project => project.ProjectName.Contains(name));
+            var getProjects = result.ToEnumerable();
             return getProjects;
         }
 
@@ -102,7 +102,7 @@ namespace Project.Api.Services
             var result = await _Projects.FindAsync(proj => proj.Id == projectId);
             var project = await result.SingleOrDefaultAsync();
             var wiki = project.Wiki;
-             return wiki;
+            return wiki;
         }
 
         public async Task<string> DownloadProject(string projectId)
@@ -159,8 +159,8 @@ namespace Project.Api.Services
         public async Task<bool> AddSuperVisorToProject(string projectId, MongoSuperVisor superVisor)
         {
             var oldProject = await GetProjectById(projectId);
-            superVisor.Id =Guid.NewGuid().ToString();
-            oldProject.SuperVisior=superVisor;
+            superVisor.Id = Guid.NewGuid().ToString();
+            oldProject.SuperVisior = superVisor;
             var result = await _Projects.ReplaceOneAsync(project => project.Id == projectId, oldProject);
             return result.IsAcknowledged;
         }
@@ -282,6 +282,34 @@ namespace Project.Api.Services
             var resultReplace = await _Projects.ReplaceOneAsync(proj => proj.Id == projectId, project);
             return resultReplace.IsAcknowledged;
         }
+        public async Task<bool> RemoveToDOFromProject(string projectId, string todoId)
+        {
+            var result = await _Projects.FindAsync(proj => proj.Id == projectId);
+            var project = await result.SingleOrDefaultAsync();
+            var deletedToDo = project.Framework.ToDos.SingleOrDefault(d => d.Id == todoId);
+            project.Framework.ToDos.Remove(deletedToDo);
+            var resultReplace = await _Projects.ReplaceOneAsync(proj => proj.Id == projectId, project);
+            return resultReplace.IsAcknowledged;
+        }
+        public async Task<bool> RemoveInProgressFromProject(string projectId, string inprogressId)
+        {
+            var result = await _Projects.FindAsync(proj => proj.Id == projectId);
+            var project = await result.SingleOrDefaultAsync();
+            var deletedInProgress = project.Framework.InProgress.SingleOrDefault(d => d.Id == inprogressId);
+            project.Framework.InProgress.Remove(deletedInProgress);
+            var resultReplace = await _Projects.ReplaceOneAsync(proj => proj.Id == projectId, project);
+            return resultReplace.IsAcknowledged;
+        }
+        public async Task<bool> RemoveDoneFromProject(string projectId, string doneId)
+        {
+            var result = await _Projects.FindAsync(proj => proj.Id == projectId);
+            var project = await result.SingleOrDefaultAsync();
+            var deletedDone = project.Framework.Dones.SingleOrDefault(d => d.Id == doneId);
+            project.Framework.Dones.Remove(deletedDone);
+            var resultReplace = await _Projects.ReplaceOneAsync(proj => proj.Id == projectId, project);
+            return resultReplace.IsAcknowledged;
+        }
+
         #endregion
     }
 }

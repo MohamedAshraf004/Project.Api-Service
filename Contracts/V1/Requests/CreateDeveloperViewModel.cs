@@ -7,6 +7,6 @@ namespace Project.Api.Contracts.V1.Requests
 {
     public class CreateDeveloperViewModel
     {
-        public string DeveloperName { get; set; }
+        public string Name { get; set; }
     }
 }

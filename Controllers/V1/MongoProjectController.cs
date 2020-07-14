@@ -8,6 +8,7 @@ using Project.Api.Services;
 using Project.Api.V1.Contracts;
 using System;
 using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Project.Api.Controllers.V1
@@ -36,7 +37,7 @@ namespace Project.Api.Controllers.V1
             var projects = await _mongoProjectService.GetAllProjects();
             if (projects != null)
             {
-                return Ok(new { incomingProjects = projects });
+                return Ok(projects);
             }
             return this.StatusCode(StatusCodes.Status500InternalServerError, "Database Failure");
         }
@@ -47,17 +48,17 @@ namespace Project.Api.Controllers.V1
             var project = await _mongoProjectService.GetProjectById(projectId);
             if (project != null)
             {
-                return Ok(new { incomingProject = project });
+                return Ok(project);
             }
             return NotFound(new { status = 0, message = "Not Found" });
         }
         [HttpGet(ApiRoutes.Project.GetDeveloperById)]
-        public async Task<IActionResult> GetDeveloperById([FromRoute] string projectId, [FromRoute]string developerId)
+        public async Task<IActionResult> GetDeveloperById([FromRoute] string projectId, [FromRoute] string developerId)
         {
             var developer = await _mongoProjectService.GetDeveloperById(developerId, projectId);
             if (developer != null)
             {
-                return Ok(new { incomingDeveloper = developer });
+                return Ok(developer);
             }
             return NotFound(new { status = 0, message = "Not Found" });
         }
@@ -68,7 +69,7 @@ namespace Project.Api.Controllers.V1
             var project = await _mongoProjectService.GetProjectByName(projectName);
             if (project != null)
             {
-                return Ok(new { incomingProjects = project });
+                return Ok(project);
             }
             return NotFound(new { status = 0, message = "Not Found" });
         }
@@ -80,7 +81,7 @@ namespace Project.Api.Controllers.V1
                 var developers = await _mongoProjectService.GetDevelopersInProject(projectId);
                 if (developers.Count > 0)
                 {
-                    return Ok(new { developersInProject = developers });
+                    return Ok(developers);
                 }
                 return NoContent();
 
@@ -94,7 +95,7 @@ namespace Project.Api.Controllers.V1
             var dones = await _mongoProjectService.GetAllDone(projectId);
             if (dones != null)
             {
-                return Ok(new { incomingProjects = dones });
+                return Ok(dones);
             }
             return this.StatusCode(StatusCodes.Status500InternalServerError, "Database Failure");
         }
@@ -105,7 +106,7 @@ namespace Project.Api.Controllers.V1
             var inprogress = await _mongoProjectService.GetAllInProgress(projectId);
             if (inprogress != null)
             {
-                return Ok(new { incomingProjects = inprogress });
+                return Ok(inprogress);
             }
             return this.StatusCode(StatusCodes.Status500InternalServerError, "Database Failure");
         }
@@ -116,7 +117,7 @@ namespace Project.Api.Controllers.V1
             var todos = await _mongoProjectService.GetAllToDo(projectId);
             if (todos != null)
             {
-                return Ok(new { incomingProjects = todos });
+                return Ok(todos);
             }
             return this.StatusCode(StatusCodes.Status500InternalServerError, "Database Failure");
         }
@@ -129,7 +130,7 @@ namespace Project.Api.Controllers.V1
                 var result = await _mongoProjectService.GetWiki(projectId);
                 if (result != null)
                 {
-                    return Ok(new { wiki = result });
+                    return Ok(result);
                 }
                 return BadRequest(new { status = 0, message = "Something wrong happenned" });
             }
@@ -144,21 +145,21 @@ namespace Project.Api.Controllers.V1
                 var result = await _mongoProjectService.GetFramework(projectId);
                 if (result != null)
                 {
-                    return Ok(new { framework = result });
+                    return Ok(result);
                 }
                 return BadRequest(new { status = 0, message = "Something wrong happenned" });
             }
             return BadRequest(new { status = 0, message = "Invalid request" });
         }
         [HttpGet(ApiRoutes.Project.DownloadProject)]
-        public async Task<IActionResult> DownloadProject([FromRoute]string projectId)
+        public async Task<IActionResult> DownloadProject([FromRoute] string projectId)
         {
             if (projectId != null)
             {
                 var result = await _mongoProjectService.DownloadProject(projectId);
                 if (result != null)
                 {
-                    return Ok(new { filePath = result });
+                    return Ok(result);
                 }
                 return NotFound(new { message = "there is no project by this id" });
             }
@@ -169,13 +170,17 @@ namespace Project.Api.Controllers.V1
 
         #region Post
         [HttpPost(ApiRoutes.Project.CreateProject)]
-        public async Task<IActionResult> Create([FromForm] CreateProjectViewModel model)
+        public async Task<IActionResult> Create([FromBody] CreateProjectViewModel model)
         {
+            if (model.Name == null || model == null)
+            {
+                return BadRequest();
+            }
 
             var result = await _mongoProjectService.CreateProject(model);
             if (result)
             {
-                return Ok(new { status = 1, message = "Created successfully" });
+                return Ok(model);
             }
             return BadRequest(new { status = 0, message = "Not Created" });
         }
@@ -197,14 +202,13 @@ namespace Project.Api.Controllers.V1
 
         #region Put
         [HttpPut(ApiRoutes.Project.AddDeveloperToProject)]
-        public async Task<IActionResult> AddDeveloperToProject([FromRoute]string projectId, [FromForm]CreateDeveloperViewModel model)
+        public async Task<IActionResult> AddDeveloperToProject([FromRoute] string projectId, [FromBody] CreateDeveloperViewModel model)
         {
-            if (ModelState.IsValid)
+            if (ModelState.IsValid && model.Name != null)
             {
                 var developer = new MongoDeveloper
                 {
-
-                    Name = model.DeveloperName
+                    Name = model.Name
                 };
                 var result = await _mongoProjectService.AddDeveloperToProject(projectId, developer);
                 if (result)
@@ -218,19 +222,18 @@ namespace Project.Api.Controllers.V1
         }
 
         [HttpPut(ApiRoutes.Project.AddSuperVisorToProject)]
-        public async Task<IActionResult> AddSuperVisorToProject([FromRoute]string projectId, [FromForm]CreateSuperVisorViewModel model)
+        public async Task<IActionResult> AddSuperVisorToProject([FromRoute] string projectId, [FromRoute] string SuperVisorName)
         {
-            if (ModelState.IsValid)
+            if (ModelState.IsValid && SuperVisorName != null)
             {
                 var superVisor = new MongoSuperVisor
                 {
-
-                    Name = model.SuperVisorName
+                    Name = SuperVisorName
                 };
                 var result = await _mongoProjectService.AddSuperVisorToProject(projectId, superVisor);
-                if (result)
+                if (result == true && SuperVisorName != null)
                 {
-                    return Ok(new { status = 1, message = "Add successfully" });
+                    return Ok();
                 }
                 return BadRequest(new { status = 0, message = "Not Added" });
 
@@ -239,7 +242,7 @@ namespace Project.Api.Controllers.V1
         }
 
         [HttpPut(ApiRoutes.Project.UpdateProject)]
-        public async Task<IActionResult> UpdateProject([FromRoute]string projectId, [FromForm] CreateProjectViewModel model)
+        public async Task<IActionResult> UpdateProject([FromRoute] string projectId, [FromBody] CreateProjectViewModel model)
         {
             var updatedProject = new MongoProject
             {
@@ -252,9 +255,9 @@ namespace Project.Api.Controllers.V1
             }
             return BadRequest(new { status = 0, message = "Not Updated" });
         }
-  
+
         [HttpPut(ApiRoutes.Project.Evalution)]
-        public async Task<IActionResult> Evalution([FromRoute]string projectId, [FromForm]MongoEvalution evalution)
+        public async Task<IActionResult> Evalution([FromRoute] string projectId, [FromBody] MongoEvalution evalution)
         {
             if (ModelState.IsValid)
             {
@@ -271,7 +274,7 @@ namespace Project.Api.Controllers.V1
 
 
         [HttpPut(ApiRoutes.Project.MarkProject)]
-        public async Task<IActionResult> MarkProject([FromRoute]string projectId, [FromForm] double mark)
+        public async Task<IActionResult> MarkProject([FromRoute] string projectId, [FromBody] double mark)
         {
             if (ModelState.IsValid)
             {
@@ -304,10 +307,14 @@ namespace Project.Api.Controllers.V1
         }
 
         [HttpPut(ApiRoutes.Project.AssignToDo)]
-        public async Task<IActionResult> AssignToDo([FromRoute]string projectId, [FromForm] ToDoViewModel model)
+        public async Task<IActionResult> AssignToDo([FromRoute] string projectId, [FromBody] ToDoViewModel model)
         {
             if (ModelState.IsValid)
             {
+                if (model.Name == null)
+                {
+                    return BadRequest();
+                }
                 var result = await _mongoProjectService.AssignToDo(projectId, model);
                 if (result)
                 {
@@ -319,29 +326,29 @@ namespace Project.Api.Controllers.V1
         }
 
         [HttpPut(ApiRoutes.Project.Inprogress)]
-        public async Task<IActionResult> Inprogress([FromRoute]string projectId, [FromForm] InProgressViewModel model)
+        public async Task<IActionResult> Inprogress([FromRoute] string projectId, [FromBody] InProgressViewModel model)
         {
             if (ModelState.IsValid)
             {
                 var result = await _mongoProjectService.AssignInProgress(projectId, model);
                 if (result)
                 {
-                    return Ok(new { status = 1, message = "Success to add inprogress" });
+                    return Ok(model);
                 }
-                return BadRequest(new { status = 1, message = "Something wrong happen" });
+                return BadRequest(new { status = 0, message = "Something wrong happen" });
             }
             return BadRequest(new { status = 0, message = "Bad request" });
         }
 
         [HttpPut(ApiRoutes.Project.AssignDone)]
-        public async Task<IActionResult> AssignDone([FromRoute]string projectId, [FromForm] DoneViewModel model)
+        public async Task<IActionResult> AssignDone([FromRoute] string projectId, [FromBody] DoneViewModel model)
         {
             if (ModelState.IsValid)
             {
                 var result = await _mongoProjectService.AssignDone(projectId, model);
                 if (result)
                 {
-                    return Ok(new { status = 1, message = "Success to add done" });
+                    return Ok(model);
                 }
                 return BadRequest(new { status = 1, message = "Something wrong happen" });
             }
@@ -361,10 +368,9 @@ namespace Project.Api.Controllers.V1
                 }
             }
             return BadRequest(new { status = 0, message = "Bad request" });
-
         }
         [HttpPut(ApiRoutes.Project.UploadProject)]
-        public async Task<IActionResult> UploadProject(string projectId, IFormFile file)
+        public async Task<IActionResult> UploadProject([FromRoute] string projectId, IFormFile file)
         {
             var projectLocation = "Projects";
             if (ModelState.IsValid)
@@ -383,11 +389,57 @@ namespace Project.Api.Controllers.V1
 
         #region Delete
         [HttpDelete(ApiRoutes.Project.RemoveDeveloperFromProject)]
-        public async Task<IActionResult> RemoveDeveloperFromProject([FromRoute]string projectId, [FromForm]string developerId)
+        public async Task<IActionResult> RemoveDeveloperFromProject([FromRoute] string projectId, [FromRoute] string developerId)
         {
             if (ModelState.IsValid)
             {
                 var result = await _mongoProjectService.RemoveDeveloperFromProject(projectId, developerId);
+                if (result)
+                {
+                    return Ok(new { status = 1, message = "Removed successfully" });
+                }
+                return BadRequest(new { status = 0, message = "Not removed" });
+
+            }
+            return BadRequest(new { status = 0, message = "Not Valid" });
+        }
+
+        [HttpDelete(ApiRoutes.Project.RemoveToDoFromProject)]
+        public async Task<IActionResult> RemoveToDoFromProject([FromRoute] string projectId, [FromRoute] string todoId)
+        {
+            if (ModelState.IsValid)
+            {
+                var result = await _mongoProjectService.RemoveToDOFromProject(projectId, todoId);
+                if (result)
+                {
+                    return Ok(new { status = 1, message = "Removed successfully" });
+                }
+                return BadRequest(new { status = 0, message = "Not removed" });
+
+            }
+            return BadRequest(new { status = 0, message = "Not Valid" });
+        }
+        [HttpDelete(ApiRoutes.Project.RemoveInProgressFromProject)]
+        public async Task<IActionResult> RemoveInProgressFromProject([FromRoute] string projectId, [FromRoute] string inprogressId)
+        {
+            if (ModelState.IsValid)
+            {
+                var result = await _mongoProjectService.RemoveInProgressFromProject(projectId, inprogressId);
+                if (result)
+                {
+                    return Ok(new { status = 1, message = "Removed successfully" });
+                }
+                return BadRequest(new { status = 0, message = "Not removed" });
+
+            }
+            return BadRequest(new { status = 0, message = "Not Valid" });
+        }
+        [HttpDelete(ApiRoutes.Project.RemoveDoneFromProject)]
+        public async Task<IActionResult> RemoveDoneFromProject([FromRoute] string projectId, [FromRoute] string doneId)
+        {
+            if (ModelState.IsValid)
+            {
+                var result = await _mongoProjectService.RemoveDoneFromProject(projectId, doneId);
                 if (result)
                 {
                     return Ok(new { status = 1, message = "Removed successfully" });
@@ -416,7 +468,7 @@ namespace Project.Api.Controllers.V1
             }
         }
         [HttpDelete(ApiRoutes.Project.RemoveProject)]
-        public async Task<IActionResult> RemoveProject([FromForm]MongoProject project)
+        public async Task<IActionResult> RemoveProject([FromBody] MongoProject project)
         {
             var result = await _mongoProjectService.RemoveProject(project);
             try

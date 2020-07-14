@@ -20,8 +20,11 @@
             public const string RemoveProject = Base + "RemoveProject/";
             public const string RemoveProjectById = Base + "RemoveProjectById/{projectId}";
             public const string AddDeveloperToProject = Base + "AddDeveloperToProject/{projectId}";
-            public const string AddSuperVisorToProject = Base + "AddSuperVisorToProject/{projectId}";
-            public const string RemoveDeveloperFromProject = Base + "RemoveDeveloperFromProject/{projectId}";
+            public const string AddSuperVisorToProject = Base + "AddSuperVisorToProject/{projectId}/{SuperVisorName}";
+            public const string RemoveDeveloperFromProject = Base + "RemoveDeveloperFromProject/{projectId}/{developerId}";
+            public const string RemoveToDoFromProject = Base + "RemoveToDoFromProject/{projectId}/{todoId}";
+            public const string RemoveInProgressFromProject = Base + "RemoveInProgressFromProject/{projectId}/{inprogressId}";
+            public const string RemoveDoneFromProject = Base + "RemoveDoneFromProject/{projectId}/{doneId}";
 
             //supervisor services routes
             public const string Evalution = Base + "Evalution/{projectId}";
